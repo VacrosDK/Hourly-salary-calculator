@@ -1,4 +1,4 @@
-const CACHE = 'timelon-v1';
+const CACHE = 'timelon-v2';
 const ASSETS = [
   './',
   './index.html',
