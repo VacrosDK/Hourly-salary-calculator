@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="da">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Timeløn-beregner</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js'));
+    }
+  </script>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 24px; }
+    .app { max-width: 420px; margin: auto; display: grid; gap: 14px; }
+    label { display: grid; gap: 6px; }
+    input, button { font-size: 1.1rem; padding: 10px; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    output { font-weight: 600; font-size: 1.2rem; }
+    .hint { color: #555; font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <h1>Timeløn-beregner</h1>
+
+    <div class="row">
+      <label>Start tidspunkt
+        <input id="start" type="time" value="08:00" />
+      </label>
+      <label>Slut tidspunkt
+        <input id="end" type="time" value="16:00" />
+      </label>
+    </div>
+
+    <label>Beløb (kr.)
+      <input id="amount" type="text" inputmode="decimal" placeholder="fx 750,50" />
+      <div class="hint">Du kan bruge komma eller punktum som decimal.</div>
+    </label>
+
+    <button id="calc">Beregn</button>
+
+    <div>
+      <div><strong>Arbejdstid:</strong> <span id="hours">—</span> timer</div>
+      <div><strong>Timeløn:</strong> <output id="rate">—</output> kr/time</div>
+      <div id="msg" class="hint"></div>
+    </div>
+  </div>
+
+  <script>
+    function parseHHMM(v) {
+      const [hh, mm] = v.split(':').map(Number);
+      return (hh * 60 + (mm || 0)); // minutter siden midnat
+    }
+    function formatHours(mins) {
+      return (Math.round((mins / 60) * 100) / 100).toString().replace('.', ',');
+    }
+    function toNumberLocale(s) {
+      return Number(String(s).trim().replace(',', '.'));
+    }
+
+    document.getElementById('calc').addEventListener('click', () => {
+      const start = document.getElementById('start').value;
+      const end   = document.getElementById('end').value;
+      const amountStr = document.getElementById('amount').value;
+
+      const startMin = parseHHMM(start);
+      let endMin = parseHHMM(end);
+
+      if (endMin < startMin) endMin += 24 * 60; // over midnat
+
+      const durationMin = endMin - startMin;
+      const hours = durationMin / 60;
+
+      const amount = toNumberLocale(amountStr);
+      const msgEl = document.getElementById('msg');
+      msgEl.textContent = '';
+
+      if (!isFinite(amount) || amount <= 0) {
+        msgEl.textContent = 'Beløbet skal være et positivt tal.';
+        return;
+      }
+      if (durationMin <= 0) {
+        msgEl.textContent = 'Tidsintervallet skal være større end 0.';
+        return;
+      }
+
+      const hourly = amount / hours;
+      document.getElementById('hours').textContent = formatHours(durationMin);
+      document.getElementById('rate').textContent =
+        (Math.round(hourly * 100) / 100).toString().replace('.', ',');
+    });
+  </script>
+</body>
+</html>
